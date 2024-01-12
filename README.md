@@ -20,3 +20,25 @@ const mainWindow = new StatefullBrowserWindow({
     }
 })
 ```
+
+## API
+
+#### new StatefullBrowserWindow(options)
+
+StatefullBrowserWindow extends BrowserWindow.
+
+##### options
+
+`configFilePath` - _String_
+
+The path where the state file should be written to. Defaults to
+`app.getPath('userData')`
+
+`configFileName` - _String_
+
+The name of file. Defaults to `window-state.json`. This is usefull if you want to support multiple windows.
+
+`supportMaximize` - _Boolean_
+
+Should we automatically maximize the window, if it was last closed
+maximized. Defaults to `false`
