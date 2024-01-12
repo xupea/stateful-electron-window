@@ -10,13 +10,12 @@ import jsonfile from "jsonfile";
 import { mkdirp } from "mkdirp";
 
 interface ExtraOptions {
-  //   fullScreen?: boolean;
   /** The path where the state file should be written to. Defaults to `app.getPath('userData')`. */
   configFilePath?: string;
   /** The name of file. Defaults to `window-state.json`. */
   configFileName?: string;
   /** Should we automatically maximize the window, if it was last closed maximized. Defaults to `true`. */
-  //   maximize?: boolean;
+  supportMaximize?: boolean;
 }
 
 interface State {
@@ -26,10 +25,8 @@ interface State {
   };
   /** The saved height of loaded state. `defaultHeight` if the state has not been saved yet. */
   height: number;
-  /** true if the window state was saved while the window was in full screen mode. `undefined` if the state has not been saved yet. */
-  //   isFullScreen: boolean;
   /** `true` if the window state was saved while the window was maximized. `undefined` if the state has not been saved yet. */
-  //   isMaximized: boolean;
+  isMaximized?: boolean;
   /** The saved width of loaded state. `defaultWidth` if the state has not been saved yet. */
   width: number;
   /** The saved x coordinate of the loaded state. `undefined` if the state has not been saved yet. */
@@ -53,7 +50,7 @@ function hasBounds(state: State) {
 }
 
 function validateState(state: State) {
-  const isValid = state && hasBounds(state);
+  const isValid = state && (hasBounds(state) || state.isMaximized);
   if (!isValid) {
     return null;
   }
@@ -88,12 +85,13 @@ function windowWithinBounds(state: State, bounds: Rectangle) {
   );
 }
 
-function refineOptions(
+function refineOptionsAndState(
   options: BrowserWindowConstructorOptions & ExtraOptions,
-): BrowserWindowConstructorOptions {
+): BrowserWindowConstructorOptions & { isMaximized?: boolean } {
   const {
     configFilePath = app.getPath("userData"),
     configFileName = "window-state.json",
+    supportMaximize,
     ...restOriginalOptions
   } = options;
 
@@ -107,17 +105,15 @@ function refineOptions(
     // Don't care
   }
 
-  console.log("stored state", savedState);
-
   savedState = validateState(savedState);
 
   if (!savedState) {
     return restOriginalOptions;
   }
 
-  const { x, y, width, height } = savedState;
+  const { x, y, width, height, isMaximized } = savedState;
 
-  return { ...restOriginalOptions, x, y, width, height };
+  return { ...restOriginalOptions, x, y, width, height, isMaximized };
 }
 
 export class StatefullBrowserWindow extends BrowserWindow {
@@ -131,24 +127,27 @@ export class StatefullBrowserWindow extends BrowserWindow {
     const {
       configFilePath = app.getPath("userData"),
       configFileName = "window-state.json",
+      supportMaximize,
     } = options;
 
-    const newOptions = refineOptions(options);
-
-    console.log(newOptions);
+    const newOptions = refineOptionsAndState(options);
 
     super(newOptions);
 
-    const { x, y, width = 800, height = 600 } = newOptions;
+    const { x, y, width = 800, height = 600, isMaximized } = newOptions;
 
-    this.state = { x, y, width, height };
+    this.state = { x, y, width, height, isMaximized };
 
     this.fullStoreFileName = path.join(configFilePath, configFileName);
 
-    this.manage();
+    this.manage(supportMaximize);
   }
 
-  private manage() {
+  private manage(supportMaximize?: boolean) {
+    if (supportMaximize && this.state?.isMaximized) {
+      this.maximize();
+    }
+
     this.on("resize", this.stateChangeHandler);
     this.on("move", this.stateChangeHandler);
     this.on("close", this.closeHandler);
@@ -182,22 +181,19 @@ export class StatefullBrowserWindow extends BrowserWindow {
   private updateState() {
     try {
       const winBounds = this.getBounds();
-      console.log("update state", winBounds);
       if (this.isNormal()) {
         this.state!.x = winBounds.x;
         this.state!.y = winBounds.y;
         this.state!.width = winBounds.width;
         this.state!.height = winBounds.height;
       }
-      //   this.state.isMaximized = this.isMaximized();
-      //   this.state.isFullScreen = this.isFullScreen();
+      this.state!.isMaximized = this.isMaximized();
       this.state!.displayBounds = screen.getDisplayMatching(winBounds).bounds;
     } catch (err) {}
   }
 
   private saveState() {
     // Save state
-    console.log("saving state to disk", this.state);
     try {
       mkdirp.sync(path.dirname(this.fullStoreFileName));
       jsonfile.writeFileSync(this.fullStoreFileName, this.state);
