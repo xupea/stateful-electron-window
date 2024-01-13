@@ -1,5 +1,8 @@
 # stateful-electron-window
 
+[![NPM version](https://badge.fury.io/js/stateful-electron-window.svg)](https://badge.fury.io/js/stateful-electron-window)
+[![Downloads](https://img.shields.io/npm/dw/stateful-electron-window)](https://img.shields.io/npm/dw/stateful-electron-window)
+
 A library to store and restore window sizes and positions for your Electron app
 
 ## Installation
