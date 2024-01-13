@@ -1,5 +1,6 @@
 # stateful-electron-window
 
+[![Tests](https://github.com/xupea/stateful-electron-window/actions/workflows/tests.yml/badge.svg)](https://github.com/xupea/stateful-electron-window/actions/workflows/tests.yml)
 [![NPM version](https://badge.fury.io/js/stateful-electron-window.svg)](https://badge.fury.io/js/stateful-electron-window)
 [![Downloads](https://img.shields.io/npm/dw/stateful-electron-window)](https://img.shields.io/npm/dw/stateful-electron-window)
 

@@ -1,0 +1,75 @@
+name: Tests
+
+on:
+  - pull_request
+  - push
+
+env:
+  CI: 1
+
+jobs:
+  main:
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      matrix:
+        include:
+          # Different node version
+          - os: ubuntu-latest
+            node_version: latest
+            electron_version: latest
+            experimental: false
+          - os: ubuntu-latest
+            node_version: 16
+            electron_version: latest
+            experimental: false
+          - os: ubuntu-latest
+            node_version: 14
+            electron_version: latest
+            experimental: true
+
+          # Different electron version
+          - os: ubuntu-latest
+            node_version: latest
+            electron_version: 16
+            experimental: true
+          - os: ubuntu-latest
+            node_version: latest
+            electron_version: 13
+            experimental: true
+
+          # Different OS
+          - os: macos-latest
+            node_version: latest
+            electron_version: latest
+            experimental: true
+          - os: windows-latest
+            node_version: latest
+            electron_version: latest
+            experimental: true
+
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      - run: npm config set script-shell 'bash'
+        if: runner.os == 'Windows'
+
+      - run: npm install
+
+      - run: npm install -D electron@${{ matrix.electron_version }}
+        if: ${{ matrix.electron_version != 'latest' }}
+
+      - run: |
+          if [ "${RUNNER_OS}" = 'Linux' ]; then
+            xvfb-run --auto-servernum npm run test
+          else
+            npm run test
+          fi
