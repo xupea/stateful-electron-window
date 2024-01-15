@@ -1,4 +1,5 @@
 import path from "path";
+import os from "os";
 import { readFileSync } from "jsonfile";
 
 import { StatefulBrowserWindow } from "../src/index";
@@ -21,6 +22,8 @@ beforeEach(() => {
 });
 
 test("tries to read state file from the default location", () => {
+  const currentPlatform = os.platform();
+
   (readFileSync as any).mockImplementation(() => {
     return jest.fn();
   });
@@ -34,12 +37,20 @@ test("tries to read state file from the default location", () => {
   });
 
   expect(readFileSync).toHaveBeenCalled();
-  expect(readFileSync).toHaveBeenCalledWith(
-    "/path/to/user/data/window-state.json",
-  );
+  if (currentPlatform === "win32") {
+    expect(readFileSync).toHaveBeenCalledWith(
+      "\\path\\to\\user\\data\\window-state.json",
+    );
+  } else {
+    expect(readFileSync).toHaveBeenCalledWith(
+      "/path/to/user/data/window-state.json",
+    );
+  }
 });
 
 test("tries to read state file from the configured source", () => {
+  const currentPlatform = os.platform();
+
   (readFileSync as any).mockImplementation(() => {
     return jest.fn();
   });
@@ -55,7 +66,14 @@ test("tries to read state file from the configured source", () => {
   });
 
   expect(readFileSync).toHaveBeenCalled();
-  expect(readFileSync).toHaveBeenCalledWith("/path/custom/data/state.json");
+
+  if (currentPlatform === "win32") {
+    expect(readFileSync).toHaveBeenCalledWith(
+      "\\path\\custom\\data\\state.json",
+    );
+  } else {
+    expect(readFileSync).toHaveBeenCalledWith("/path/custom/data/state.json");
+  }
 });
 
 test("considers the state invalid if without bounds", () => {
@@ -69,8 +87,6 @@ test("considers the state invalid if without bounds", () => {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
-    configFilePath: "/path/custom/data",
-    configFileName: "state.json",
   });
 
   expect(win.getBounds().width).not.toBe(100);
