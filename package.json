@@ -17,6 +17,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@kayahr/jest-electron-runner": "^29.11.0",
     "@types/jest": "^29.5.11",
     "@types/jsonfile": "^6.1.4",
     "electron": "*",
