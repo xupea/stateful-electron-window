@@ -19,10 +19,7 @@ interface ExtraOptions {
 }
 
 interface State {
-  displayBounds?: {
-    height: number;
-    width: number;
-  };
+  displayBounds?: Rectangle;
   /** The saved height of loaded state. `defaultHeight` if the state has not been saved yet. */
   height: number;
   /** `true` if the window state was saved while the window was maximized. `undefined` if the state has not been saved yet. */
@@ -73,7 +70,18 @@ function ensureWindowVisibleOnSomeDisplay(state: State) {
     return null;
   }
 
-  return state;
+  // for multi monitor support and scaling (devicePixelRatio)
+  const display = screen.getDisplayMatching({
+    x: state.x!,
+    y: state.y!,
+    width: state.displayBounds!.width,
+    height: state.displayBounds!.height,
+  });
+
+  const newWidth = ~~(state.width / display.scaleFactor);
+  const newHeight = ~~(state.height / display.scaleFactor);
+
+  return { ...state, width: newWidth, height: newHeight };
 }
 
 function windowWithinBounds(state: State, bounds: Rectangle) {
@@ -116,7 +124,7 @@ function refineOptionsAndState(
   return { ...restOriginalOptions, x, y, width, height, isMaximized };
 }
 
-export class StatefullBrowserWindow extends BrowserWindow {
+export class StatefulBrowserWindow extends BrowserWindow {
   private stateChangeTimer?: ReturnType<typeof setTimeout>;
 
   private state: State | null = null;
