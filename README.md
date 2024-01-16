@@ -21,7 +21,8 @@ const mainWindow = new StatefullBrowserWindow({
     height: 600,
     webPreferences: {
         preload: path.join(__dirname, 'preload.js')
-    }
+    },
+    supportMaximize: true
 })
 ```
 
