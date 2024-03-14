@@ -1,6 +1,7 @@
 import path from "path";
 import os from "os";
 import { readFileSync } from "jsonfile";
+import { screen } from "electron";
 
 import { StatefulBrowserWindow } from "../src/index";
 
@@ -14,11 +15,19 @@ jest.mock("electron", () => {
     app: {
       getPath: jest.fn(() => "/path/to/user/data"),
     },
+    screen: {
+      getAllDisplays: jest.fn(),
+      getDisplayMatching: jest.fn(),
+      getPrimaryDisplay: jest.fn(),
+    },
   };
 });
 
 beforeEach(() => {
   (readFileSync as any).mockClear();
+  (screen as any).getDisplayMatching.mockClear();
+  (screen as any).getPrimaryDisplay.mockClear();
+  (screen as any).getAllDisplays.mockClear();
 });
 
 test("tries to read state file from the default location", () => {
@@ -90,4 +99,35 @@ test("considers the state invalid if without bounds", () => {
   });
 
   expect(win.getBounds().width).not.toBe(100);
+});
+
+test("Reset state to default values if saved display is unavailable", () => {
+  (readFileSync as any).mockImplementation(() => {
+    return () => ({
+      x: -2000,
+      y: -1000,
+      width: 800,
+      height: 600,
+      displayBounds: { x: -2560, y: -480, width: 2560, height: 1440 },
+    });
+  });
+
+  const screenBounds = { x: 0, y: 0, width: 1680, height: 1050 };
+
+  (screen as any).getDisplayMatching.mockReturnValue({ bounds: screenBounds });
+  (screen as any).getPrimaryDisplay.mockReturnValue({ bounds: screenBounds });
+  (screen as any).getAllDisplays.mockReturnValue([{ bounds: screenBounds }]);
+
+  const win = new StatefulBrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+    },
+  });
+
+  expect(win.getBounds().width).toBe(800);
+  expect(win.getBounds().height).toBe(600);
+  expect(win.getBounds().x).toBe(356);
+  expect(win.getBounds().y).toBe(191);
 });
